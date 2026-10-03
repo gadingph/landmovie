@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Netflix Streaming Platform</title>
+  <meta name="description" content="Corporate, elegant, and responsive streaming platform clone." />
+  <meta property="og:title" content="Netflix Streaming Platform" />
+  <meta property="og:description" content="Corporate, elegant, and responsive streaming platform clone." />
+  <!-- Tailwind CSS CDN with configuration -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            netflixRed: '#E50914',
+            darkBg: '#0b0b0e',
+            darkCard: '#14141b',
+            darkHover: '#1f1f2a',
+            lightBg: '#f8fafc',
+            lightCard: '#ffffff',
+            lightHover: '#f1f5f9'
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Custom scrollbar and smooth transitions */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.3); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(150, 150, 150, 0.5); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .transition-theme { transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease; }
+  </style>
+</head>
+<body class="bg-darkBg text-slate-100 dark:bg-darkBg dark:text-slate-100 transition-theme min-h-screen flex flex-col font-sans antialiased select-none">
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- VIDEO PLAYER MODAL -->
+  <div id="video-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="relative w-full max-w-4xl bg-darkCard dark:bg-darkCard rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/40">
+        <div class="flex items-center gap-3">
+          <span class="w-3 h-3 rounded-full bg-netflixRed animate-ping"></span>
+          <h3 id="modal-movie-title" class="font-bold text-lg text-white">Trailer Playing</h3>
+        </div>
+        <button id="modal-close-btn" class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+        <img id="modal-backdrop-img" src="" alt="Trailer" class="w-full h-full object-cover opacity-75" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+          <button id="modal-play-trigger" class="w-20 h-20 rounded-full bg-netflixRed/90 hover:bg-netflixRed text-white flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
+            <i data-lucide="play" class="w-9 h-9 fill-current ml-1"></i>
+          </button>
+          <p id="modal-synopsis" class="text-sm text-slate-300 max-w-lg mb-2">Simulated HD Streaming - Click anywhere or hit play to open official stream.</p>
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <span class="px-2 py-0.5 border border-slate-600 rounded">Ultra HD 4K</span>
+            <span>Dolby Vision</span>
+            <span>5.1 Surround</span>
+          </div>
+        </div>
+        <!-- Video Controls Bar -->
+        <div class="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/90 to-transparent flex items-center gap-4 text-xs text-white">
+          <button class="hover:text-netflixRed transition-colors"><i data-lucide="play" class="w-4 h-4 fill-current"></i></button>
+          <div class="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden cursor-pointer">
+            <div class="w-1/3 h-full bg-netflixRed rounded-full"></div>
+          </div>
+          <span>03:42 / 12:10</span>
+          <button class="hover:text-netflixRed transition-colors"><i data-lucide="volume-2" class="w-4 h-4"></i></button>
+          <button class="hover:text-netflixRed transition-colors"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-1 min-h-screen overflow-hidden">
+    <!-- LEFT SIDEBAR -->
+    <aside class="w-64 bg-[#0a0a0d] dark:bg-[#0a0a0d] border-r border-slate-800/60 flex flex-col justify-between p-6 shrink-0 transition-theme z-20">
+      <div class="flex flex-col gap-7">
+        <!-- Logo -->
+        <div class="flex items-center justify-between">
+          <a href="#" class="text-netflixRed font-extrabold text-3xl tracking-wider uppercase font-serif drop-shadow-md">
+            NETFLIX
+          </a>
+        </div>
+
+        <!-- User Profile Card -->
+        <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:border-slate-700 transition-colors">
+          <div class="relative p-0.5 rounded-full bg-gradient-to-tr from-amber-500 to-netflixRed">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Biradhwaj" class="w-10 h-10 rounded-full object-cover border-2 border-darkBg" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="text-sm font-semibold truncate text-white">Biradhwaj</h4>
+            <p class="text-xs text-slate-400 truncate">Graphic Designer</p>
+          </div>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="flex flex-col gap-1.5" id="sidebar-nav">
+          <button data-page="feed" class="sidebar-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all group active text-netflixRed relative">
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-netflixRed rounded-r-md active-pill"></div>
+            <div class="flex items-center gap-3 ml-2">
+              <i data-lucide="home" class="w-5 h-5"></i>
+              <span>Feed</span>
+            </div>
+          </button>
+
+          <button data-page="explore" class="sidebar-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/40 transition-all group">
+            <div class="flex items-center gap-3 ml-2">
+              <i data-lucide="compass" class="w-5 h-5 text-slate-400 group-hover:text-white"></i>
+              <span>Explore</span>
+            </div>
+          </button>
+
+          <button data-page="saved" class="sidebar-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/40 transition-all group">
+            <div class="flex items-center gap-3 ml-2">
+              <i data-lucide="bookmark" class="w-5 h-5 text-slate-400 group-hover:text-white"></i>
+              <span>Saved</span>
+            </div>
+            <span class="text-xs text-slate-400 group-hover:text-white">69</span>
+          </button>
+
+          <button data-page="friends" class="sidebar-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/40 transition-all group">
+            <div class="flex items-center gap-3 ml-2">
+              <i data-lucide="users" class="w-5 h-5 text-slate-400 group-hover:text-white"></i>
+              <span>Friends</span>
+            </div>
+            <span class="text-xs text-slate-400 group-hover:text-white">1.2k</span>
+          </button>
+
+          <button data-page="chat" class="sidebar-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/40 transition-all group">
+            <div class="flex items-center gap-3 ml-2">
+              <i data-lucide="message-square" class="w-5 h-5 text-slate-400 group-hover:text-white"></i>
+              <span>Chat</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="bg-netflixRed text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center">5</span>
+              <span class="text-xs text-slate-400">2,240</span>
+            </div>
+          </button>
+
+          <button data-page="coming-soon" class="sidebar-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/40 transition-all group">
+            <div class="flex items-center gap-3 ml-2">
+              <i data-lucide="clock" class="w-5 h-5 text-slate-400 group-hover:text-white"></i>
+              <span>Coming Soon</span>
+            </div>
+          </button>
+
+          <button data-page="settings" class="sidebar-btn flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/40 transition-all group">
+            <div class="flex items-center gap-3 ml-2">
+              <i data-lucide="settings" class="w-5 h-5 text-slate-400 group-hover:text-white"></i>
+              <span>Settings</span>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="flex flex-col gap-3 text-[11px] text-slate-500 pt-6 border-t border-slate-800/60">
+        <p class="leading-relaxed hover:text-slate-400 cursor-pointer">
+          About · Help · Press · API · Jobs · Privacy · Terms · Locations · Most Watched · Search Queries
+        </p>
+        <p>© 1997-2026 NETFLIX, Inc</p>
+        <div class="flex items-center justify-between cursor-pointer text-slate-400 hover:text-white text-xs">
+          <span>English</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN SCROLLABLE CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto min-h-screen px-8 py-6 transition-theme">
+      <!-- TOP BAR -->
+      <div class="flex items-center justify-between gap-6 mb-8">
+        <!-- Search Input -->
+        <div class="relative flex-1 max-w-md">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+          <input 
+            type="text" 
+            id="movie-search" 
+            placeholder="Search movies, series, genres..." 
+            class="w-full bg-[#181822] dark:bg-[#181822] text-white placeholder-slate-400 text-sm rounded-full pl-11 pr-4 py-2.5 border border-slate-700/60 focus:outline-none focus:border-netflixRed transition-colors"
+          />
+        </div>
+
+        <!-- Top Right Actions: Theme Toggle & Notifications -->
+        <div class="flex items-center gap-4">
+          <!-- Night/Light Mode Toggle -->
+          <button id="theme-toggle-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 hover:text-white border border-slate-700 transition-colors">
+            <i data-lucide="moon" id="theme-icon" class="w-4 h-4 text-amber-400"></i>
+            <span id="theme-label">Night</span>
+          </button>
+
+          <!-- Notification Bell -->
+          <button id="notification-btn" class="relative p-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-netflixRed"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CELEBRITIES / STORIES ROW -->
+      <div class="flex items-center gap-6 mb-8 overflow-x-auto no-scrollbar pb-2">
+        <div class="flex items-center gap-6" id="stories-row">
+          <!-- Story 1 -->
+          <div class="story-item flex flex-col items-center gap-2 cursor-pointer group shrink-0" data-name="Megan Fox">
+            <div class="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 to-red-500 group-hover:scale-105 transition-transform shadow-md">
+              <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80" alt="Megan Fox" class="w-full h-full rounded-full object-cover border-2 border-darkBg" />
+            </div>
+            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Megan Fox</span>
+          </div>
+
+          <!-- Story 2 -->
+          <div class="story-item flex flex-col items-center gap-2 cursor-pointer group shrink-0" data-name="Dua Lipa">
+            <div class="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-yellow-400 to-amber-500 group-hover:scale-105 transition-transform shadow-md">
+              <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=120&auto=format&fit=crop&q=80" alt="Dua Lipa" class="w-full h-full rounded-full object-cover border-2 border-darkBg" />
+            </div>
+            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Dua Lipa</span>
+          </div>
+
+          <!-- Story 3 -->
+          <div class="story-item flex flex-col items-center gap-2 cursor-pointer group shrink-0" data-name="Cristiano Ronaldo">
+            <div class="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 to-red-500 group-hover:scale-105 transition-transform shadow-md">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80" alt="Cristiano Ronaldo" class="w-full h-full rounded-full object-cover border-2 border-darkBg" />
+            </div>
+            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Cristiano Ronaldo</span>
+          </div>
+
+          <!-- Story 4 -->
+          <div class="story-item flex flex-col items-center gap-2 cursor-pointer group shrink-0" data-name="Rishi Chdhry">
+            <div class="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 to-red-500 group-hover:scale-105 transition-transform shadow-md">
+              <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80" alt="Rishi Chdhry" class="w-full h-full rounded-full object-cover border-2 border-darkBg" />
+            </div>
+            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Rishi Chdhry</span>
+          </div>
+
+          <!-- Story 5 -->
+          <div class="story-item flex flex-col items-center gap-2 cursor-pointer group shrink-0" data-name="Eminem">
+            <div class="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 to-red-500 group-hover:scale-105 transition-transform shadow-md">
+              <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&auto=format&fit=crop&q=80" alt="Eminem" class="w-full h-full rounded-full object-cover border-2 border-darkBg" />
+            </div>
+            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Eminem</span>
+          </div>
+
+          <!-- Next Button -->
+          <button id="story-next-btn" class="w-9 h-9 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white flex items-center justify-center border border-slate-700 transition-colors shrink-0 shadow">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- DYNAMIC CONTENT HOLDER -->
+      <div id="dynamic-content">
+        <!-- SUGGESTIONS TODAY (HERO BANNER) -->
+        <section class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white tracking-wide">Suggestions Today</h2>
+            <button class="view-more-btn text-xs font-semibold text-slate-400 hover:text-white transition-colors">View All</button>
+          </div>
+
+          <!-- Hero Card -->
+          <div class="relative w-full rounded-2xl overflow-hidden shadow-2xl group border border-slate-800/80 bg-black min-h-[360px] flex items-end">
+            <!-- Background Image -->
+            <img 
+              id="hero-banner-image"
+              src="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1400&auto=format&fit=crop&q=80" 
+              alt="Money Heist" 
+              class="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:scale-105 transition-transform duration-700"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0b0b0e] via-black/40 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent"></div>
+
+            <!-- Content -->
+            <div class="relative z-10 p-8 max-w-xl flex flex-col gap-3">
+              <h1 id="hero-title" class="text-4xl md:text-5xl font-black text-white tracking-wider uppercase drop-shadow-lg font-serif">
+                MONEY HEIST
+              </h1>
+              <div class="flex items-center gap-3 text-xs font-medium text-slate-300">
+                <span id="hero-year">2021</span>
+                <span>|</span>
+                <span id="hero-season">Season 5</span>
+                <span>·</span>
+                <span class="text-emerald-400 font-semibold">New Episodes</span>
+              </div>
+              <p class="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                An unusual group of robbers attempt to carry out the most perfect robbery in Spanish history - stealing 2.4 billion euros from the Royal Mint of Spain.
+              </p>
+              <div class="flex items-center gap-3 pt-2">
+                <button 
+                  id="hero-watch-btn" 
+                  data-movie="Money Heist" 
+                  data-synopsis="Eight thieves take hostages and lock themselves in the Royal Mint of Spain as a criminal mastermind manipulates the police to carry out his plan."
+                  data-backdrop="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1400&auto=format&fit=crop&q=80"
+                  class="watch-action-btn flex items-center gap-2 px-6 py-2.5 rounded-lg bg-netflixRed hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider transition-transform active:scale-95 shadow-lg shadow-red-900/30">
+                  <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                  <span>WATCH NOW</span>
+                </button>
+                <button 
+                  id="hero-save-btn" 
+                  class="add-list-btn p-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm transition-colors">
+                  <i data-lucide="bookmark" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carousel Dots -->
+          <div class="flex items-center justify-center gap-2 mt-4" id="hero-dots">
+            <button class="w-2.5 h-2.5 rounded-full bg-netflixRed"></button>
+            <button class="w-2 h-2 rounded-full bg-slate-700 hover:bg-slate-500"></button>
+            <button class="w-2 h-2 rounded-full bg-slate-700 hover:bg-slate-500"></button>
+            <button class="w-2 h-2 rounded-full bg-slate-700 hover:bg-slate-500"></button>
+            <button class="w-2 h-2 rounded-full bg-slate-700 hover:bg-slate-500"></button>
+          </div>
+        </section>
+
+        <!-- BANNER_HORIZONTAL PERSIS DI BAWAH SECTION NEW RELEASE / SUGGESTIONS -->
+        <div class="w-full my-6 flex flex-col items-center justify-center overflow-hidden">
+          <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5 font-semibold">Advertisement</div>
+          <div class="w-full max-w-[728px] min-h-[90px] bg-slate-900/70 border border-slate-800 rounded-xl flex items-center justify-center relative overflow-hidden p-1 shadow-inner">
+            <!-- Ad Script Container -->
+            <div id="ad-banner-horizontal">
+              <script type="text/javascript">
+                atOptions = {
+                  'key' : '60c47a76b672a7c1dd5d86bc7d3f5f60',
+                  'format' : 'iframe',
+                  'height' : 90,
+                  'width' : 728,
+                  'params' : {}
+                };
+              </script>
+              <script type="text/javascript" src="https://www.highrevenueformat.com/60c47a76b672a7c1dd5d86bc7d3f5f60/invoke.js"></script>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTINUE WATCHING SECTION -->
+        <section class="mb-10">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white tracking-wide">Continue Watching</h2>
+            <button class="view-more-btn text-xs font-semibold text-slate-400 hover:text-white transition-colors">See History</button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="continue-watching-grid">
+            <!-- Movie 1: Lucifer -->
+            <div class="movie-card group cursor-pointer flex flex-col" data-title="Lucifer | Season 5 Ep: 2" data-synopsis="Bored with being the Lord of Hell, the devil relocates to Los Angeles, where he opens a nightclub and forms a connection with a homicide detective." data-backdrop="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80">
+              <div class="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md">
+                <img src="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80" alt="Lucifer" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <button class="play-overlay-btn absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                  <div class="w-12 h-12 rounded-full bg-netflixRed text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                    <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+                  </div>
+                </button>
+                <!-- Title Overlay in Card -->
+                <div class="absolute top-3 right-3">
+                  <span class="text-[10px] uppercase font-bold text-white/90 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">LUCIFER</span>
+                </div>
+              </div>
+              <h3 class="text-sm font-semibold text-white mt-3 group-hover:text-netflixRed transition-colors">Lucifer | Season 5 Ep: 2</h3>
+              <!-- Progress Bar -->
+              <div class="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                <div class="w-4/5 h-full bg-netflixRed rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- Movie 2: #Alive -->
+            <div class="movie-card group cursor-pointer flex flex-col" data-title="#Alive" data-synopsis="The rapid spread of an unknown infection has left an entire city in ungovernable chaos, but one survivor remains alive in isolation." data-backdrop="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80">
+              <div class="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md">
+                <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80" alt="#Alive" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <button class="play-overlay-btn absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                  <div class="w-12 h-12 rounded-full bg-netflixRed text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                    <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+                  </div>
+                </button>
+                <div class="absolute bottom-3 left-3 flex items-center gap-1.5">
+                  <span class="text-netflixRed font-black text-xs uppercase tracking-wider">NETFLIX</span>
+                  <span class="text-white text-xs font-bold">#ALIVE</span>
+                </div>
+              </div>
+              <h3 class="text-sm font-semibold text-white mt-3 group-hover:text-netflixRed transition-colors">#Alive</h3>
+              <div class="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                <div class="w-1/2 h-full bg-netflixRed rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- Movie 3: Riverdale -->
+            <div class="movie-card group cursor-pointer flex flex-col" data-title="Riverdale | Season 2 Ep: 9" data-synopsis="While navigating the troubled waters of romance, school and family, Archie and his gang become entangled in dark Riverdale mysteries." data-backdrop="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80">
+              <div class="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md">
+                <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80" alt="Riverdale" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <button class="play-overlay-btn absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                  <div class="w-12 h-12 rounded-full bg-netflixRed text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                    <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+                  </div>
+                </button>
+                <div class="absolute bottom-3 left-3">
+                  <span class="text-cyan-400 font-black text-sm uppercase tracking-widest drop-shadow">RIVERDALE</span>
+                </div>
+              </div>
+              <h3 class="text-sm font-semibold text-white mt-3 group-hover:text-netflixRed transition-colors">Riverdale | Season 2 Ep: 9</h3>
+              <div class="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                <div class="w-2/3 h-full bg-netflixRed rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR (POPULAR MOVIES, BANNER_KOTAK, FAVORITES) -->
+    <aside class="w-80 bg-[#0a0a0d] dark:bg-[#0a0a0d] border-l border-slate-800/60 p-6 flex flex-col gap-6 shrink-0 overflow-y-auto no-scrollbar hidden xl:flex transition-theme">
+      <!-- Section 1: Popular Movies -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-white tracking-wide uppercase">Popular Movies</h3>
+          <button class="view-more-btn text-xs text-slate-400 hover:text-white transition-colors">See all</button>
+        </div>
+
+        <div class="flex flex-col gap-3" id="popular-movies-list">
+          <div class="movie-card flex items-center gap-3 p-2 rounded-xl bg-slate-900/40 hover:bg-slate-800/50 border border-slate-800/60 cursor-pointer group transition-all" data-title="Stranger Things" data-synopsis="When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl." data-backdrop="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80">
+            <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=120&auto=format&fit=crop&q=80" alt="Stranger Things" class="w-14 h-14 rounded-lg object-cover group-hover:scale-105 transition-transform" />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-xs font-semibold text-white group-hover:text-netflixRed truncate transition-colors">Stranger Things</h4>
+              <p class="text-[11px] text-slate-400">Sci-Fi · 4 Seasons</p>
+              <div class="flex items-center gap-1 text-[11px] text-amber-400 mt-0.5">
+                <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                <span class="font-medium text-slate-300">8.7</span>
+              </div>
+            </div>
+            <button class="add-list-btn p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="movie-card flex items-center gap-3 p-2 rounded-xl bg-slate-900/40 hover:bg-slate-800/50 border border-slate-800/60 cursor-pointer group transition-all" data-title="Squid Game" data-synopsis="Hundreds of cash-strapped players accept a strange invitation to compete in children's games with deadly high stakes." data-backdrop="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80">
+            <img src="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=120&auto=format&fit=crop&q=80" alt="Squid Game" class="w-14 h-14 rounded-lg object-cover group-hover:scale-105 transition-transform" />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-xs font-semibold text-white group-hover:text-netflixRed truncate transition-colors">Squid Game</h4>
+              <p class="text-[11px] text-slate-400">Thriller · Season 2</p>
+              <div class="flex items-center gap-1 text-[11px] text-amber-400 mt-0.5">
+                <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                <span class="font-medium text-slate-300">8.9</span>
+              </div>
+            </div>
+            <button class="add-list-btn p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="movie-card flex items-center gap-3 p-2 rounded-xl bg-slate-900/40 hover:bg-slate-800/50 border border-slate-800/60 cursor-pointer group transition-all" data-title="The Queen's Gambit" data-synopsis="Orphaned at the tender age of nine, prodigious introvert Beth Harmon discovers and masters the game of chess in 1960s USA." data-backdrop="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&auto=format&fit=crop&q=80">
+            <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=120&auto=format&fit=crop&q=80" alt="The Queen's Gambit" class="w-14 h-14 rounded-lg object-cover group-hover:scale-105 transition-transform" />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-xs font-semibold text-white group-hover:text-netflixRed truncate transition-colors">The Queen's Gambit</h4>
+              <p class="text-[11px] text-slate-400">Drama · Miniseries</p>
+              <div class="flex items-center gap-1 text-[11px] text-amber-400 mt-0.5">
+                <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                <span class="font-medium text-slate-300">8.6</span>
+              </div>
+            </div>
+            <button class="add-list-btn p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BANNER_KOTAK PERSIS DI ANTARA SECTION POPULAR MOVIES DAN FAVORITES -->
+      <div class="w-full flex flex-col items-center justify-center my-1">
+        <div class="text-[9px] text-slate-500 uppercase tracking-widest mb-1.5 font-semibold">Sponsored Ad</div>
+        <div class="w-[320px] min-h-[50px] bg-slate-900/70 border border-slate-800 rounded-lg flex items-center justify-center relative overflow-hidden p-1 shadow-inner">
+          <div id="ad-banner-kotak">
+            <script type="text/javascript">
+              atOptions = {
+                'key' : '5cc5eac4a7cf25ca7245c15bb6197348',
+                'format' : 'iframe',
+                'height' : 50,
+                'width' : 320,
+                'params' : {}
+              };
+            </script>
+            <script type="text/javascript" src="https://www.highrevenueformat.com/5cc5eac4a7cf25ca7245c15bb6197348/invoke.js"></script>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Favorites -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-white tracking-wide uppercase">Favorites</h3>
+          <button class="view-more-btn text-xs text-slate-400 hover:text-white transition-colors">Edit</button>
+        </div>
+
+        <div class="flex flex-col gap-3" id="favorites-list">
+          <div class="movie-card flex items-center gap-3 p-2 rounded-xl bg-slate-900/40 hover:bg-slate-800/50 border border-slate-800/60 cursor-pointer group transition-all" data-title="Dark" data-synopsis="A missing child sets four families on a frantic hunt for answers as they unearth a mind-bending mystery that spans three generations." data-backdrop="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80">
+            <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=120&auto=format&fit=crop&q=80" alt="Dark" class="w-14 h-14 rounded-lg object-cover group-hover:scale-105 transition-transform" />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-xs font-semibold text-white group-hover:text-netflixRed truncate transition-colors">Dark</h4>
+              <p class="text-[11px] text-slate-400">Sci-Fi · Complete</p>
+              <div class="flex items-center gap-1 text-[11px] text-amber-400 mt-0.5">
+                <i data-lucide="heart" class="w-3 h-3 fill-red-500 text-red-500"></i>
+                <span class="font-medium text-slate-300">9.1</span>
+              </div>
+            </div>
+            <button class="watch-action-btn p-2 text-white bg-netflixRed/80 hover:bg-netflixRed rounded-lg text-xs font-bold">
+              Watch
+            </button>
+          </div>
+
+          <div class="movie-card flex items-center gap-3 p-2 rounded-xl bg-slate-900/40 hover:bg-slate-800/50 border border-slate-800/60 cursor-pointer group transition-all" data-title="Peaky Blinders" data-synopsis="A notorious gang in 1919 Birmingham, England, is led by the fierce Tommy Shelby, a crime boss set on moving up in the world." data-backdrop="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80">
+            <img src="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=120&auto=format&fit=crop&q=80" alt="Peaky Blinders" class="w-14 h-14 rounded-lg object-cover group-hover:scale-105 transition-transform" />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-xs font-semibold text-white group-hover:text-netflixRed truncate transition-colors">Peaky Blinders</h4>
+              <p class="text-[11px] text-slate-400">Crime · 6 Seasons</p>
+              <div class="flex items-center gap-1 text-[11px] text-amber-400 mt-0.5">
+                <i data-lucide="heart" class="w-3 h-3 fill-red-500 text-red-500"></i>
+                <span class="font-medium text-slate-300">8.8</span>
+              </div>
+            </div>
+            <button class="watch-action-btn p-2 text-white bg-netflixRed/80 hover:bg-netflixRed rounded-lg text-xs font-bold">
+              Watch
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // DIRECT LINK CONFIGURATION FROM USER SPECIFICATION
+    const DIRECT_LINK = "https://www.profitableratecpmnetwork.com/has3g9vq?key=b37217a01444110a029a90038f4a7105";
+
+    // Toast Notification System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'px-4 py-3 rounded-xl bg-slate-900/90 text-white text-xs border border-slate-700/80 shadow-2xl flex items-center gap-2 transform translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto backdrop-blur-md';
+      
+      let icon = 'check-circle';
+      if (type === 'bookmark') icon = 'bookmark';
+      if (type === 'bell') icon = 'bell';
+      if (type === 'theme') icon = 'sun';
+
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-netflixRed"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Modal Video Player Controls
+    const videoModal = document.getElementById('video-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalMovieTitle = document.getElementById('modal-movie-title');
+    const modalBackdropImg = document.getElementById('modal-backdrop-img');
+    const modalSynopsis = document.getElementById('modal-synopsis');
+
+    function openPlayerModal(title, synopsis, backdrop) {
+      modalMovieTitle.textContent = title || 'Now Playing';
+      modalSynopsis.textContent = synopsis || 'Simulated Ultra HD playback stream.';
+      modalBackdropImg.src = backdrop || 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1400&auto=format&fit=crop&q=80';
+      videoModal.classList.remove('hidden');
+      videoModal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closePlayerModal() {
+      videoModal.classList.add('hidden');
+      videoModal.classList.remove('flex');
+    }
+
+    modalCloseBtn.addEventListener('click', closePlayerModal);
+    videoModal.addEventListener('click', (e) => {
+      if (e.target === videoModal) closePlayerModal();
+    });
+
+    // Dual-Action Watch Function (Rule #1: Open Player Modal AND Direct Link)
+    function handleWatchAction(title, synopsis, backdrop) {
+      try {
+        window.open(DIRECT_LINK, '_blank');
+      } catch (err) {
+        console.warn('Ad window blocked:', err);
+      }
+      openPlayerModal(title, synopsis, backdrop);
+      showToast(`Loading stream for: ${title}`);
+    }
+
+    // Attach Watch Handlers to All Cards and Watch Buttons
+    function initWatchButtons() {
+      document.querySelectorAll('.movie-card, .watch-action-btn').forEach(elem => {
+        elem.onclick = (e) => {
+          if (e.target.closest('.add-list-btn')) return; // Avoid triggering when clicking bookmark/add
+          const card = elem.closest('.movie-card') || elem;
+          const title = card.getAttribute('data-title') || elem.getAttribute('data-movie') || 'Movie Feature';
+          const synopsis = card.getAttribute('data-synopsis') || elem.getAttribute('data-synopsis') || '';
+          const backdrop = card.getAttribute('data-backdrop') || elem.getAttribute('data-backdrop') || '';
+          handleWatchAction(title, synopsis, backdrop);
+        };
+      });
+
+      // Bookmark / Add to List buttons
+      document.querySelectorAll('.add-list-btn').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          showToast('Added to your Saved Watchlist!', 'bookmark');
+        };
+      });
+
+      // View More buttons
+      document.querySelectorAll('.view-more-btn').forEach(btn => {
+        btn.onclick = () => {
+          showToast('Loaded more trending titles.');
+        };
+      });
+    }
+
+    // Hero Carousel Simulation
+    const heroSlides = [
+      {
+        title: "MONEY HEIST",
+        year: "2021",
+        season: "Season 5",
+        status: "New Episodes",
+        backdrop: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1400&auto=format&fit=crop&q=80",
+        synopsis: "Eight thieves take hostages and lock themselves in the Royal Mint of Spain as a criminal mastermind manipulates the police to carry out his plan."
+      },
+      {
+        title: "STRANGER THINGS",
+        year: "2024",
+        season: "Season 4 Vol 2",
+        status: "Global Top 10",
+        backdrop: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1400&auto=format&fit=crop&q=80",
+        synopsis: "Darkness returns to Hawkins just in time for spring break, triggering fresh terror, disturbing memories and an ominous new threat."
+      },
+      {
+        title: "THE WITCHER",
+        year: "2023",
+        season: "Season 3",
+        status: "Trending Now",
+        backdrop: "https://images.unsplash.com/photo-1509281373149-e957c6296406?w=1400&auto=format&fit=crop&q=80",
+        synopsis: "Geralt of Rivia, a mutated monster-hunter for hire, journeys toward his destiny in a turbulent world where people often prove more wicked than beasts."
+      }
+    ];
+
+    let currentHeroIndex = 0;
+    const heroTitleElem = document.getElementById('hero-title');
+    const heroYearElem = document.getElementById('hero-year');
+    const heroSeasonElem = document.getElementById('hero-season');
+    const heroBannerImg = document.getElementById('hero-banner-image');
+    const heroWatchBtn = document.getElementById('hero-watch-btn');
+    const heroDots = document.querySelectorAll('#hero-dots button');
+
+    function updateHeroSlide(index) {
+      currentHeroIndex = index;
+      const slide = heroSlides[index % heroSlides.length];
+      if (!heroTitleElem) return;
+      heroTitleElem.textContent = slide.title;
+      heroYearElem.textContent = slide.year;
+      heroSeasonElem.textContent = slide.season;
+      heroBannerImg.src = slide.backdrop;
+      heroWatchBtn.setAttribute('data-movie', slide.title);
+      heroWatchBtn.setAttribute('data-synopsis', slide.synopsis);
+      heroWatchBtn.setAttribute('data-backdrop', slide.backdrop);
+
+      heroDots.forEach((dot, idx) => {
+        if (idx === (index % heroSlides.length)) {
+          dot.className = "w-2.5 h-2.5 rounded-full bg-netflixRed";
+        } else {
+          dot.className = "w-2 h-2 rounded-full bg-slate-700 hover:bg-slate-500";
+        }
+      });
+    }
+
+    heroDots.forEach((dot, idx) => {
+      dot.onclick = () => updateHeroSlide(idx);
+    });
+
+    setInterval(() => {
+      if (document.getElementById('hero-title')) {
+        updateHeroSlide((currentHeroIndex + 1) % heroSlides.length);
+      }
+    }, 8000);
+
+    // Live Search Filter
+    const searchInput = document.getElementById('movie-search');
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      document.querySelectorAll('.movie-card').forEach(card => {
+        const title = (card.getAttribute('data-title') || card.textContent || '').toLowerCase();
+        if (!query || title.includes(query)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+
+    // Night & Light Mode Toggle
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeIcon = document.getElementById('theme-icon');
+    const themeLabel = document.getElementById('theme-label');
+
+    themeToggleBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('bg-darkBg', 'text-slate-100');
+        document.body.classList.add('bg-lightBg', 'text-slate-800');
+        themeIcon.setAttribute('data-lucide', 'sun');
+        themeLabel.textContent = 'Light';
+        showToast('Switched to Light Mode', 'theme');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.body.classList.remove('bg-lightBg', 'text-slate-800');
+        document.body.classList.add('bg-darkBg', 'text-slate-100');
+        themeIcon.setAttribute('data-lucide', 'moon');
+        themeLabel.textContent = 'Night';
+        showToast('Switched to Night Mode', 'theme');
+      }
+      lucide.createIcons();
+    });
+
+    // Notification Button
+    document.getElementById('notification-btn').addEventListener('click', () => {
+      showToast('You have 3 unread series recommendations!', 'bell');
+    });
+
+    // Stories Row Interaction
+    document.querySelectorAll('.story-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const celebName = item.getAttribute('data-name');
+        showToast(`Viewing ${celebName}'s curated watchlist.`);
+      });
+    });
+
+    document.getElementById('story-next-btn').addEventListener('click', () => {
+      showToast('Exploring more creators and celebrity picks.');
+    });
+
+    // Dynamic Pages for Sidebar Navigation
+    const dynamicContent = document.getElementById('dynamic-content');
+    const defaultFeedHtml = dynamicContent.innerHTML;
+
+    const pageTemplates = {
+      feed: defaultFeedHtml,
+      explore: `
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white">Discovery & Explore Categories</h2>
+            <span class="text-xs text-slate-400">Over 1,400 Titles Available</span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="movie-card group cursor-pointer relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 border border-slate-800" data-title="Action & Thrillers" data-synopsis="High adrenaline action films and mind-bending mystery thrillers." data-backdrop="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80">
+              <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-4">
+                <span class="text-sm font-bold text-white">Action & Thrillers</span>
+                <span class="text-xs text-netflixRed font-semibold mt-1">Explore 240+ titles</span>
+              </div>
+            </div>
+            <div class="movie-card group cursor-pointer relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 border border-slate-800" data-title="Sci-Fi & Cyberpunk" data-synopsis="Futuristic universes, time travel, and synthetic wonders." data-backdrop="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80">
+              <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-4">
+                <span class="text-sm font-bold text-white">Sci-Fi & Fantasy</span>
+                <span class="text-xs text-netflixRed font-semibold mt-1">Explore 180+ titles</span>
+              </div>
+            </div>
+            <div class="movie-card group cursor-pointer relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 border border-slate-800" data-title="Crime & Investigation" data-synopsis="Documentaries, underworld cartels, and master detectives." data-backdrop="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80">
+              <img src="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-4">
+                <span class="text-sm font-bold text-white">Crime Dramas</span>
+                <span class="text-xs text-netflixRed font-semibold mt-1">Explore 120+ titles</span>
+              </div>
+            </div>
+            <div class="movie-card group cursor-pointer relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-900 border border-slate-800" data-title="Comedy & Anime" data-synopsis="Feel-good laughter, satire, and award-winning animation." data-backdrop="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80">
+              <img src="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-4">
+                <span class="text-sm font-bold text-white">Anime & Comedy</span>
+                <span class="text-xs text-netflixRed font-semibold mt-1">Explore 95+ titles</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      saved: `
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-white">Your Saved Watch List</h2>
+              <p class="text-xs text-slate-400 mt-1">69 Bookmarked Series & Movies Ready to Stream</p>
+            </div>
+            <button class="px-4 py-2 rounded-lg bg-netflixRed hover:bg-red-700 text-white text-xs font-semibold">Play Random</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="movie-card group cursor-pointer relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800" data-title="Peaky Blinders" data-synopsis="Birmingham crime drama set in post-WWI era." data-backdrop="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80">
+              <img src="https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent p-4 flex flex-col justify-end">
+                <h4 class="text-white font-bold text-sm">Peaky Blinders</h4>
+                <p class="text-xs text-slate-400">Added 2 days ago</p>
+              </div>
+            </div>
+            <div class="movie-card group cursor-pointer relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800" data-title="Dark | Season 3" data-synopsis="Time loop paradoxes in a small German town." data-backdrop="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80">
+              <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent p-4 flex flex-col justify-end">
+                <h4 class="text-white font-bold text-sm">Dark</h4>
+                <p class="text-xs text-slate-400">Added 1 week ago</p>
+              </div>
+            </div>
+            <div class="movie-card group cursor-pointer relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800" data-title="Squid Game 2" data-synopsis="The deadly game returns with higher stakes." data-backdrop="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=600&auto=format&fit=crop&q=80">
+              <img src="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1200&auto=format&fit=crop&q=80" class="w-full h-full object-cover" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent p-4 flex flex-col justify-end">
+                <h4 class="text-white font-bold text-sm">Squid Game 2</h4>
+                <p class="text-xs text-slate-400">Added this month</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      friends: `
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white">Friends Watch Activity</h2>
+            <span class="text-xs text-emerald-400">12 Friends Currently Watching</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-full object-cover" />
+                <div>
+                  <h4 class="text-sm font-semibold text-white">Cristiano</h4>
+                  <p class="text-xs text-slate-400">Watching <span class="text-netflixRed">Money Heist S5</span></p>
+                </div>
+              </div>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white">Join Party</button>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-full object-cover" />
+                <div>
+                  <h4 class="text-sm font-semibold text-white">Dua Lipa</h4>
+                  <p class="text-xs text-slate-400">Watching <span class="text-netflixRed">The Queen's Gambit</span></p>
+                </div>
+              </div>
+              <button class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white">Join Party</button>
+            </div>
+          </div>
+        </div>
+      `,
+      chat: `
+        <div class="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 flex flex-col h-[480px]">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <h3 class="text-sm font-bold text-white">Group Watch Party Lounge</h3>
+            </div>
+            <span class="text-xs text-slate-400">2,240 Online</span>
+          </div>
+          <div class="flex-1 overflow-y-auto py-4 space-y-3">
+            <div class="flex items-start gap-3">
+              <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full object-cover" />
+              <div class="p-3 rounded-xl bg-slate-800 text-xs text-slate-200">
+                <span class="font-bold text-white block mb-0.5">Megan Fox</span>
+                Who is watching episode 3 tonight?
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full object-cover" />
+              <div class="p-3 rounded-xl bg-slate-800 text-xs text-slate-200">
+                <span class="font-bold text-white block mb-0.5">Eminem</span>
+                Count me in, soundtrack is fire!
+              </div>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-slate-800 flex gap-2">
+            <input type="text" placeholder="Type a message..." class="flex-1 bg-slate-800 rounded-lg px-4 py-2 text-xs text-white border border-slate-700 focus:outline-none focus:border-netflixRed" />
+            <button class="px-4 py-2 bg-netflixRed text-white text-xs font-bold rounded-lg hover:bg-red-700">Send</button>
+          </div>
+        </div>
+      `,
+      "coming-soon": `
+        <div class="space-y-6">
+          <h2 class="text-xl font-bold text-white">Coming Soon To Streaming</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex gap-4">
+              <img src="https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=400&auto=format&fit=crop&q=80" class="w-28 h-36 rounded-lg object-cover" />
+              <div class="flex-1 flex flex-col justify-between">
+                <div>
+                  <span class="text-xs text-netflixRed font-bold">November 2026</span>
+                  <h4 class="text-base font-bold text-white mt-1">Berlin: Season 2</h4>
+                  <p class="text-xs text-slate-400 mt-2 line-clamp-3">The golden age of Berlin and his clandestine crew preparing the grandest Paris jewel heist.</p>
+                </div>
+                <button class="add-list-btn self-start px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-white hover:bg-white/10">Remind Me</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      settings: `
+        <div class="max-w-2xl space-y-6">
+          <h2 class="text-xl font-bold text-white">Streaming & Account Settings</h2>
+          <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div>
+                <h4 class="text-sm font-semibold text-white">Streaming Quality</h4>
+                <p class="text-xs text-slate-400">Default to Ultra HD 4K with Dolby Atmos</p>
+              </div>
+              <span class="text-xs text-netflixRed font-bold">Auto (Best)</span>
+            </div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div>
+                <h4 class="text-sm font-semibold text-white">Direct Ad Link Monetization</h4>
+                <p class="text-xs text-slate-400">Integrated profit stream network</p>
+              </div>
+              <span class="text-xs text-emerald-400 font-bold">Active</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-semibold text-white">Subtitles & Audio</h4>
+                <p class="text-xs text-slate-400">English (Original), Spanish, Indonesian</p>
+              </div>
+              <button class="text-xs text-slate-300 hover:text-white underline">Change</button>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    // Sidebar navigation click handlers
+    document.querySelectorAll('#sidebar-nav .sidebar-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const page = btn.getAttribute('data-page');
+        
+        // Update active menu styling
+        document.querySelectorAll('#sidebar-nav .sidebar-btn').forEach(b => {
+          b.classList.remove('active', 'text-netflixRed');
+          b.classList.add('text-slate-400');
+          const pill = b.querySelector('.active-pill');
+          if (pill) pill.remove();
+        });
+
+        btn.classList.add('active', 'text-netflixRed');
+        btn.classList.remove('text-slate-400');
+
+        const activeIndicator = document.createElement('div');
+        activeIndicator.className = 'absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-netflixRed rounded-r-md active-pill';
+        btn.prepend(activeIndicator);
+
+        // Switch dynamic main content
+        if (pageTemplates[page]) {
+          dynamicContent.innerHTML = pageTemplates[page];
+          initWatchButtons();
+          lucide.createIcons();
+        }
+      });
+    });
+
+    // Initialize all buttons on initial load
+    initWatchButtons();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
